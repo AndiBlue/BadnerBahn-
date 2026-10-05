@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full w-full overflow-hidden">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Badner Bahn">
+    <meta name="theme-color" content="#020617">
+    <title>Badner Bahn Mobil • Plan B1</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700;900&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: fixed;
+            background-color: #020617;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #f8fafc;
+            touch-action: none;
+        }
+        button {
+            touch-action: manipulation;
+        }
+        .font-mono-tech {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .font-display {
+            font-family: 'Chakra Petch', sans-serif;
+        }
+        .smooth-scroll {
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .schematic-mobile-grid {
+            background-color: #070e1b;
+            background-image: 
+                linear-gradient(rgba(51, 65, 85, 0.22) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(51, 65, 85, 0.22) 1px, transparent 1px);
+            background-size: 24px 24px;
+            touch-action: pan-x;
+        }
+        .glow-train {
+            filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.9));
+        }
+        .safe-top {
+            padding-top: max(env(safe-area-inset-top), 10px);
+        }
+        .safe-bottom {
+            padding-bottom: max(env(safe-area-inset-bottom), 12px);
+        }
+    </style>
+</head>
+<body class="h-full w-full flex flex-col justify-between select-none bg-slate-950 text-slate-100 overflow-hidden">
+
+    <header class="safe-top bg-slate-900/95 border-b border-slate-800/90 px-3 py-2 z-30 shadow-md backdrop-blur-md flex-shrink-0 w-full">
+        <div class="flex items-center justify-between gap-1.5 w-full max-w-md mx-auto">
+            <!-- App Identity -->
+            <div class="flex items-center gap-2 min-w-0">
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 via-sky-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-sky-600/30 text-sm flex-shrink-0">
+                    <i class="fa-solid fa-train-subway"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-1">
+                        <span class="text-[8.5px] font-black uppercase tracking-wider px-1 py-0.2 rounded bg-sky-500/20 text-sky-400 border border-sky-500/30 font-mono-tech">
+                            PLAN B1
+                        </span>
+                        <span id="header-dir-label" class="text-[10.5px] font-extrabold text-amber-400 truncate">
+                            Gleis 1 ➔ Baden
+                        </span>
+                    </div>
+                    <h1 class="text-xs font-black tracking-wide text-white font-display truncate">
+                        BADNER BAHN MOBIL
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Header Controls -->
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                <button onclick="toggleDirection()" class="px-2 py-1 rounded-xl border border-slate-700 bg-slate-800 active:bg-slate-700 text-sky-400 flex items-center gap-1 text-[10.5px] font-bold shadow-sm" title="Richtung / Gleis wechseln">
+                    <i id="header-dir-icon" class="fa-solid fa-right-left text-[11px]"></i>
+                    <span id="header-track-nr" class="font-mono-tech">GL 1</span>
+                </button>
+
+                <button id="btn-sound-toggle" onclick="toggleAudio()" class="w-7 h-7 rounded-xl border border-slate-700 bg-slate-800 active:bg-slate-700 text-sky-400 flex items-center justify-center shadow-sm">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-[11px]"></i>
+                </button>
+
+                <button onclick="centerOnTrain(true)" class="w-7 h-7 rounded-xl border border-sky-500/50 bg-sky-500/20 active:bg-sky-500/30 text-sky-300 flex items-center justify-center shadow-sm" title="Kamera auf Zug zentrieren">
+                    <i class="fa-solid fa-crosshairs text-[11px]"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Full Line Minimap Ribbon -->
+        <div class="mt-1.5 pt-1.5 border-t border-slate-800/80 w-full max-w-md mx-auto">
+            <div class="flex items-center justify-between text-[9px] font-mono-tech text-slate-400 mb-0.5">
+                <span class="truncate max-w-[120px]">WIEN OPER</span>
+                <span id="minimap-station-label" class="font-bold text-sky-300 truncate max-w-[140px]">Start bereit</span>
+                <span class="truncate max-w-[120px] text-right">BADEN</span>
+            </div>
+            <div class="relative w-full h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                <div id="minimap-progress-fill" class="h-full bg-gradient-to-r from-blue-600 via-sky-400 to-amber-400 w-0 transition-all duration-300"></div>
+                <div id="minimap-train-marker" class="absolute top-0 w-2.5 h-full bg-white rounded-full shadow-md transition-all duration-300 -translate-x-1/2" style="left: 0%;"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col relative overflow-hidden w-full">
+        <!-- Quick Cockpit Ribbon -->
+        <div class="bg-slate-950/95 border-b border-slate-800/80 px-3 py-1 flex items-center justify-between text-[11px] font-mono-tech flex-shrink-0 z-10 w-full">
+            <div class="flex items-center gap-1.5">
+                <span class="text-slate-500 text-[10px]">KM:</span>
+                <span id="ribbon-km" class="font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20 text-[10.5px]">km 0,000</span>
+            </div>
+            
+            <!-- Whistle Alert Badge in Quick Ribbon -->
+            <div id="ribbon-pf-alert" class="hidden items-center gap-1 bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded font-bold text-[10px] animate-pulse">
+                <i class="fa-solid fa-bullhorn text-rose-400"></i>
+                <span>PFEIFEN (Pf)</span>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+                <span class="text-slate-500 text-[10px]">V-ZUL:</span>
+                <span id="ribbon-speed" class="w-5 h-5 rounded-full border border-red-600 bg-white text-slate-950 font-black text-[9.5px] flex items-center justify-center">50</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <span class="text-slate-500 text-[10px]">PUNKT:</span>
+                <span id="ribbon-progress" class="font-bold text-sky-400 text-[10.5px]">1 / 84</span>
+            </div>
+        </div>
+
+        <div id="mobile-track-viewport" class="schematic-mobile-grid flex-1 w-full overflow-x-auto overflow-y-hidden relative smooth-scroll no-scrollbar select-none cursor-grab active:cursor-grabbing">
+            <svg id="schematic-svg" style="width: 8400px; height: 100%; min-height: 220px; display: block;" viewBox="0 0 8400 280" preserveAspectRatio="none">
+                <defs>
+                    <linearGradient id="mobile-beam" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.95" />
+                        <stop offset="100%" stop-color="#38bdf8" stop-opacity="0" />
+                    </linearGradient>
+                </defs>
+
+                <!-- Grid Guide Lines -->
+                <line x1="0" y1="45" x2="8400" y2="45" stroke="#1e293b" stroke-width="1.2" stroke-dasharray="6 8"/>
+                <line x1="0" y1="225" x2="8400" y2="225" stroke="#1e293b" stroke-width="1.2" stroke-dasharray="6 8"/>
+
+                <!-- Overhead Catenary Wires -->
+                <line x1="0" y1="95" x2="8400" y2="95" stroke="#334155" stroke-width="1.4" stroke-dasharray="4 6"/>
+                <line x1="0" y1="145" x2="8400" y2="145" stroke="#334155" stroke-width="1.4" stroke-dasharray="4 6"/>
+
+                <!-- Track Labels -->
+                <text x="35" y="114" fill="#0284c7" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="900">GLEIS 1 (➔ BADEN)</text>
+                <text x="35" y="188" fill="#f59e0b" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="900">GLEIS 2 (⬅ WIEN)</text>
+
+                <!-- Track 1 Mainline (Wien -> Baden) -->
+                <line x1="0" y1="120" x2="8400" y2="120" stroke="#475569" stroke-width="6.5" stroke-linecap="round"/>
+                <line id="track1-active-highlight" x1="0" y1="120" x2="180" y2="120" stroke="#0ea5e9" stroke-width="6" stroke-linecap="round"/>
+
+                <!-- Track 2 Mainline (Baden -> Wien) -->
+                <line x1="0" y1="170" x2="8400" y2="170" stroke="#475569" stroke-width="6.5" stroke-linecap="round"/>
+                <line id="track2-active-highlight" x1="8400" y1="170" x2="8400" y2="170" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+
+                <!-- Sleepers / Ties -->
+                <g id="svg-sleepers" opacity="0.35"></g>
+
+                <!-- Rendered Elements Group -->
+                <g id="svg-elements-group"></g>
+
+                <!-- Badner Bahn Train SVG Group -->
+                <g id="svg-mobile-train" class="glow-train transition-transform duration-300" transform="translate(145, 72)">
+                    <polygon points="68,26 190,8 190,44" fill="url(#mobile-beam)" opacity="0.5" />
+                    <polyline points="22,10 30,0 40,0 48,10" fill="none" stroke="#94a3b8" stroke-width="2.5"/>
+                    <line x1="26" y1="0" x2="44" y2="0" stroke="#f59e0b" stroke-width="3.5"/>
+                    <rect x="0" y="10" width="70" height="28" rx="6" fill="#f8fafc" stroke="#0f172a" stroke-width="1.8" />
+                    <rect x="0" y="24" width="70" height="7.5" fill="#0284c7" />
+                    <rect x="0" y="31.5" width="70" height="2.5" fill="#f59e0b" />
+                    <rect x="6" y="14" width="10" height="8" rx="2" fill="#0f172a"/>
+                    <rect x="19" y="14" width="10" height="8" rx="2" fill="#0f172a"/>
+                    <rect x="32" y="14" width="10" height="8" rx="2" fill="#0f172a"/>
+                    <path d="M46 14 H60 Q65 14 66 22 H46 Z" fill="#0284c7"/>
+                    <circle cx="66" cy="31" r="2.8" fill="#e0f2fe"/>
+                    <rect x="9" y="38" width="13" height="4" rx="2" fill="#334155"/>
+                    <rect x="48" y="38" width="13" height="4" rx="2" fill="#334155"/>
+                </g>
+            </svg>
+        </div>
+
+        <div id="mobile-detail-sheet" class="bg-slate-900 border-t border-slate-800 shadow-2xl z-20 flex flex-col transition-all duration-300 w-full flex-shrink-0">
+            <div onclick="toggleSheetExpand()" class="px-3.5 py-2 bg-slate-900 active:bg-slate-850 flex items-center justify-between cursor-pointer border-b border-slate-800/80">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span id="sheet-type-pill" class="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono-tech flex-shrink-0">
+                        HALTESTELLE #1
+                    </span>
+                    <h2 id="sheet-title" class="font-extrabold text-sm text-white tracking-tight truncate max-w-[210px] sm:max-w-xs font-display">
+                        Wien Oper
+                    </h2>
+                </div>
+                <div class="flex items-center gap-2 text-slate-400 text-xs flex-shrink-0">
+                    <span id="sheet-code-pill" class="text-xs font-mono-tech font-black text-emerald-300 bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-lg">
+                        OP
+                    </span>
+                    <i id="sheet-chevron" class="fa-solid fa-chevron-up text-xs transition-transform duration-300 rotate-180"></i>
+                </div>
+            </div>
+
+            <div id="sheet-expanded-content" class="p-3 space-y-2 max-h-[175px] overflow-y-auto smooth-scroll text-xs">
+                <!-- Whistle Alert in Sheet -->
+                <div id="sheet-pf-alert" class="hidden px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono-tech font-black text-[11px] items-center gap-2 animate-pulse">
+                    <i class="fa-solid fa-bullhorn text-rose-400"></i>
+                    <span>Achtung: Pfeifsignal (Pf) ertönt hier!</span>
+                </div>
+
+                <!-- Story & Wikipedia Image Row -->
+                <div class="flex items-start gap-2.5 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/90">
+                    <div class="w-16 h-16 rounded-lg bg-slate-900 border border-slate-700/80 overflow-hidden flex-shrink-0 flex items-center justify-center relative shadow-sm">
+                        <img id="sheet-wiki-img" src="" alt="Namensgeber" referrerpolicy="no-referrer" class="w-full h-full object-cover hidden" onerror="handleMobileImgError(this)" loading="lazy">
+                        <div id="sheet-icon-box" class="w-full h-full bg-gradient-to-br from-sky-900 to-indigo-950 flex flex-col items-center justify-center text-amber-300 p-1 text-center">
+                            <i id="sheet-icon" class="fa-solid fa-train-subway text-lg mb-0.5"></i>
+                            <span id="sheet-icon-tag" class="text-[7.5px] font-mono-tech uppercase text-sky-300">STATION</span>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-1 mb-0.5">
+                            <span id="sheet-story-title" class="font-bold text-amber-300 text-xs truncate">
+                                Station: Wien Oper (OP)
+                            </span>
+                            <span id="sheet-crossing-spec" class="text-[9px] font-mono-tech px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30 flex-shrink-0">
+                                Wien • V-Zul 50
+                            </span>
+                        </div>
+                        <p id="sheet-story-desc" class="text-slate-300 text-[11px] leading-relaxed line-clamp-3">
+                            Wiener Endstation am Kärntner Ring / Oper. Umstieg zu den U-Bahn-Linien U1, U2 sowie Straßenbahnlinien D, 1, 2, 71.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Mini Progress Slider -->
+                <div class="pt-0.5 flex items-center gap-2 text-[10px] text-slate-400 font-mono-tech">
+                    <span>1</span>
+                    <input id="mobile-pos-slider" type="range" min="0" max="83" value="0" oninput="jumpToPosition(parseInt(this.value))" class="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500">
+                    <span id="mobile-pos-total">84</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="safe-bottom bg-slate-900 border-t border-slate-800 px-3 py-2 z-30 shadow-2xl flex-shrink-0 w-full">
+        <div class="max-w-md mx-auto flex items-center gap-2">
+            <button onclick="driveToPrevious()" class="w-12 h-12 py-2 px-2 rounded-2xl bg-slate-800 active:bg-slate-700 text-slate-300 font-bold flex flex-col items-center justify-center transition border border-slate-700/80 shadow-md flex-shrink-0">
+                <i class="fa-solid fa-backward-step text-sm"></i>
+                <span class="text-[8.5px] font-mono-tech mt-0.5">Zurück</span>
+            </button>
+
+            <!-- Neutral Button: Keeps next step completely secret without spoilers -->
+            <button id="btn-mobile-drive" onclick="driveToNext()" class="flex-1 py-3 px-3 rounded-2xl bg-gradient-to-r from-blue-600 via-sky-600 to-blue-500 active:from-blue-700 active:to-sky-700 text-white font-black text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-sky-600/35 border border-sky-400/40 transition-transform active:scale-[0.98] min-w-0">
+                <i id="btn-drive-icon" class="fa-solid fa-train-subway text-base flex-shrink-0"></i>
+                <span id="btn-drive-label" class="tracking-wide font-display truncate">Weiterfahren ➔</span>
+            </button>
+
+            <button id="btn-mobile-auto" onclick="toggleAutoDrive()" class="w-12 h-12 py-2 px-2 rounded-2xl bg-slate-800 active:bg-slate-700 text-amber-400 font-bold flex flex-col items-center justify-center transition border border-slate-700/80 shadow-md flex-shrink-0">
+                <i id="btn-auto-icon" class="fa-solid fa-play text-sm"></i>
+                <span class="text-[8.5px] font-mono-tech mt-0.5">Auto</span>
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        const TRACK_DATA = [
+            { id: 1, type: "station", nr: 1, code: "OP", name: "Wien Oper", area: "Wien", kmVal: 0.0, km: "km 0,000", limit: 50, icon: "fa-train-subway", wikiImg: "", history: "Wiener Endstation am Kärntner Ring / Oper. Umstieg zu den U-Bahn-Linien U1, U2 sowie Straßenbahnlinien D, 1, 2, 71." },
+            { id: 2, type: "station", nr: 2, code: "KP", name: "Wien Karlsplatz", area: "Wien", kmVal: 0.45, km: "km 0,450", limit: 50, icon: "fa-landmark", wikiImg: "", history: "Großer Verkehrsknotenpunkt mit direktem Umstieg zu den U-Bahn-Linien U1 und U4." },
+            { id: 3, type: "station", nr: 3, code: "RG", name: "Wien Resselgasse", area: "Wien", kmVal: 0.85, km: "km 0,850", limit: 50, icon: "fa-building-columns", wikiImg: "", history: "Haltestelle auf der Wiedner Hauptstraße bei der Technischen Universität Wien und dem Resselpark." },
+            { id: 4, type: "station", nr: 4, code: "PA", name: "Wien Paulanergasse", area: "Wien", kmVal: 1.25, km: "km 1,250", limit: 50, icon: "fa-train-tram", wikiImg: "", history: "Oberirdische Haltestelle im Straßenbahnnetz auf der Wiedner Hauptstraße im 4. Wiener Gemeindebezirk." },
+            { id: 5, type: "station", nr: 5, code: "MY", name: "Wien Mayerhofgasse", area: "Wien", kmVal: 1.6, km: "km 1,600", limit: 50, icon: "fa-train-tram", wikiImg: "", history: "Haltestelle auf der Wiedner Hauptstraße im 4. Wiener Bezirk Wieden." },
+            { id: 6, type: "station", nr: 6, code: "JS", name: "Wien Johann-Strauß-Gasse", area: "Wien", kmVal: 1.95, km: "km 1,950", limit: 50, icon: "fa-train-tram", wikiImg: "", history: "Haltestelle auf der Wiedner Hauptstraße im 4. Bezirk Wieden." },
+            { id: 7, type: "station", nr: 7, code: "LG", name: "Wien Laurenzgasse", area: "Wien", kmVal: 2.3, km: "km 2,300", limit: 50, icon: "fa-archway", wikiImg: "", history: "Letzte oberirdische Station auf der Wiedner Hauptstraße vor der Tunneleinfahrt in die unterirdische USTRAB-Strecke." },
+            { id: 8, type: "station", nr: 8, code: "KG", name: "Wien Kliebergasse", area: "Wien", kmVal: 2.7, km: "km 2,700", limit: 50, icon: "fa-tunnel", wikiImg: "", history: "Unterirdische Station im Südgürtel-Tunnel mit Umstieg zu den Straßenbahnlinien 1, 18 und 62." },
+            { id: 9, type: "station", nr: 9, code: "MP", name: "Wien Matzleinsdorfer Platz", area: "Wien", kmVal: 3.1, km: "km 3,100", limit: 50, icon: "fa-train", wikiImg: "", history: "Bedeutender Verkehrsknotenpunkt mit Umstieg zur S-Bahn-Stammstrecke, Regionalzügen und künftig zur U-Bahn U2." },
+            { id: 10, type: "station", nr: 10, code: "EI", name: "Wien Eichenstraße", area: "Wien", kmVal: 3.5, km: "km 3,500", limit: 50, icon: "fa-tunnel", wikiImg: "", history: "Unterirdische USTRAB-Tunnelstation nahe der früheren WLB-Remise Wolfganggasse." },
+            { id: 11, type: "station", nr: 11, code: "MM", name: "Wien Marx-Meidlinger-Str.", area: "Wien", kmVal: 3.9, km: "km 3,900", limit: 50, icon: "fa-road", wikiImg: "", history: "Haltestelle an der südlichen Ausfahrtsrampe aus dem USTRAB-Tunnel in den oberirdischen Bereich." },
+            { id: 12, type: "station", nr: 12, code: "FS", name: "Wien Flurschützstr.", area: "Wien", kmVal: 4.3, km: "km 4,300", limit: 50, icon: "fa-train-tram", wikiImg: "", history: "Oberirdische Haltestelle im 12. Wiener Gemeindebezirk Meidling." },
+            { id: 13, type: "station", nr: 13, code: "AM", name: "Wien Aßmayergasse", area: "Wien", kmVal: 4.65, km: "km 4,650", limit: 50, icon: "fa-train-tram", wikiImg: "", history: "Haltestelle im Straßenzug der Eichenstraße im 12. Bezirk Meidling." },
+            { id: 14, type: "station", nr: 14, code: "DS", name: "Wien Dörfelstraße", area: "Wien", kmVal: 4.95, km: "km 4,950", limit: 50, icon: "fa-train-tram", wikiImg: "", history: "Haltestelle im Bereich Wilhelmstraße / Eichenstraße vor dem Bahnhof Wien Meidling." },
+            { id: 15, type: "station", nr: 15, code: "PH", name: "Wien Meidling", area: "Wien", kmVal: 5.25, km: "km 5,250", limit: 50, icon: "fa-train-subway", wikiImg: "", history: "Wichtiger Fernverkehrsbahnhof der ÖBB mit direktem Umstieg zur U-Bahn U6 sowie zu S-Bahn und Regionalzügen." },
+            { id: 16, type: "station", nr: 16, code: "U6", name: "Wien Schedifkaplatz", area: "Wien", kmVal: 5.65, km: "km 2,434", limit: 50, icon: "fa-diagram-project", wikiImg: "", history: "Umsteigestation zur U-Bahn-Linie U6. Ende des Netzes der Wiener Linien und Beginn der signalgesicherten WLB-Infrastruktur." },
+            { id: 17, type: "station", nr: 17, code: "SK", name: "Wien Schöpfwerk", area: "Wien", kmVal: 6.9, km: "km 3,601", limit: 80, icon: "fa-train", wikiImg: "", history: "Haltestelle im 12. Bezirk nahe der Großwohnhausanlage Am Schöpfwerk mit barrierefreien Bahnsteigen." },
+            { id: 18, type: "station", nr: 18, code: "GG", name: "Wien Gutheil-Schoder-Gasse", area: "Wien", kmVal: 7.8, km: "km 4,260", limit: 80, icon: "fa-industry", wikiImg: "", history: "Haltestelle im Industrie- und Gewerbegebiet Inzersdorf mit Anschluss an mehrere städtische Autobuslinien." },
+            { id: 19, type: "crossing", nr: "18.1", name: "LZA Werkstättenzufahrt", parentStation: "Gutheil-Schoder-Gasse", area: "Wien", kmVal: 8.8, km: "km 5,248", limit: 80, secType: "LZA", hasPf: false, icon: "fa-wrench", wikiImg: "", history: "Zufahrt zur Lokhalle und den Werkstätten Inzersdorf der WLB. Gesichert per Lichtzeichenanlage (LZA)." },
+            { id: 20, type: "crossing", nr: "18.2", name: "LZA Anton-Baumgartner-Straße", parentStation: "Gutheil-Schoder-Gasse", area: "Wien", kmVal: 9.0, km: "km 5,309", limit: 80, secType: "LZA", hasPf: false, icon: "fa-helmet-safety", wikiImg: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Anton_Baumgartner_Litho.jpg/320px-Anton_Baumgartner_Litho.jpg", history: "Benannt nach Baumeister Anton Baumgartner (1820–1887), Wiener Gemeinderat. Gesichert per LZA." },
+            { id: 21, type: "crossing", nr: "18.3", name: "HSA Purkytgasse", parentStation: "Gutheil-Schoder-Gasse", area: "Wien", kmVal: 9.2, km: "km 5,454", limit: 80, secType: "HSA", hasPf: false, icon: "fa-landmark", wikiImg: "", history: "Benannt nach Ernst Purkyt (1862–1927), Förderer der sozialen Fürsorge in Inzersdorf. Laut Plan B1 gesichert mit Halbschrankenanlage (HSA)." },
+            { id: 22, type: "station", nr: 19, code: "IL", name: "Wien Inzersdorf Lokalbahn", area: "Wien", kmVal: 9.4, km: "km 5,509", limit: 80, icon: "fa-warehouse", wikiImg: "", history: "Zentraler Betriebsbahnhof der Wiener Lokalbahnen mit Remisen, Revisionshallen und Abstellanlagen." },
+            { id: 23, type: "crossing", nr: "19.1", name: "LZA Goldhammergasse", parentStation: "Inzersdorf Lokalbahn", area: "Wien", kmVal: 9.9, km: "km 6,227", limit: 80, secType: "LZA", hasPf: false, icon: "fa-monument", wikiImg: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Alfred_Goldhammer_Gedenktafel.jpg/320px-Alfred_Goldhammer_Gedenktafel.jpg", history: "Gewidmet Alfred Goldhammer (1907–1942), Schlosser bei den WLB und Widerstandskämpfer. Gesichert per LZA." },
+            { id: 24, type: "crossing", nr: "19.2", name: "LZA Sobotagasse", parentStation: "Inzersdorf Lokalbahn", area: "Wien", kmVal: 10.3, km: "km 6,568", limit: 80, secType: "LZA", hasPf: false, icon: "fa-user-tie", wikiImg: "", history: "Benannt nach Franz Sobota (1878–1947), Kommunalpolitiker im 23. Bezirk. Gesichert per LZA." },
+            { id: 25, type: "station", nr: 20, code: "NE", name: "Wien Neu Erlaa", area: "Wien", kmVal: 10.6, km: "km 6,625", limit: 80, icon: "fa-train", wikiImg: "", history: "Haltestelle im 23. Bezirk Liesing an der Triester Straße mit Erschließung des Wohngebiets Neu-Erlaa." },
+            { id: 26, type: "crossing", nr: "20.1", name: "LZA B17 Neu Erlaa", parentStation: "Neu Erlaa", area: "Wien", kmVal: 10.7, km: "km 6,679", limit: 80, secType: "LZA", hasPf: false, icon: "fa-road", wikiImg: "", history: "Niveaugleiche Querung der Triester Straße B17, gesichert mit LZA." },
+            { id: 27, type: "crossing", nr: "20.2", name: "LZA Erlaaerstraße", parentStation: "Neu Erlaa", area: "Wien", kmVal: 11.0, km: "km 6,970", limit: 80, secType: "LZA", hasPf: false, icon: "fa-road", wikiImg: "", history: "Alte Verbindungsstraße zum Herrensitz und Dorf Erlaa, gesichert mit LZA." },
+            { id: 28, type: "crossing", nr: "20.3", name: "LZA Schönbrunner Allee", parentStation: "Neu Erlaa", area: "Wien", kmVal: 11.15, km: "km 7,180", limit: 80, secType: "LZA", hasPf: false, icon: "fa-tree", wikiImg: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Schloss_Sch%C3%B6nbrunn_Wien_2014.jpg/320px-Schloss_Sch%C3%B6nbrunn_Wien_2014.jpg", history: "Um 1780 als fürstliche Sichtachse zwischen Schönbrunn und Laxenburg angelegt. Gesichert mit LZA." },
+            { id: 29, type: "station", nr: 21, code: "LL", name: "Wien Schönbrunner Allee", area: "Wien", kmVal: 11.3, km: "km 7,250", limit: 80, icon: "fa-train", wikiImg: "", history: "Letzte Haltestelle auf Wiener Stadtgebiet vor der Landesgrenze zu Niederösterreich." },
+            { id: 30, type: "crossing", nr: "21.1", name: "Pfeifsignal Konsumstraße", parentStation: "Schönbrunner Allee", area: "NÖ", kmVal: 11.8, km: "km 7,852", limit: 80, secType: "Pfeifsignal", hasPf: true, icon: "fa-basket-shopping", wikiImg: "", history: "Erinnert an den Konsumverein für Arbeiter. Auf Tafel B1 mit Pfeifsignal (Pf) gesichert!" },
+            { id: 31, type: "station", nr: 22, code: "VD", name: "Vösendorf-Siebenhirten", area: "NÖ", kmVal: 12.3, km: "km 8,429", limit: 80, icon: "fa-archway", wikiImg: "", history: "Erster Bahnhof in Niederösterreich an der Landesgrenze zu Wien mit Park-and-Ride-Anlage." },
+            { id: 32, type: "crossing", nr: "22.1", name: "LZA Ortsstraße Vösendorf", parentStation: "Vösendorf-Siebenhirten", area: "NÖ", kmVal: 12.4, km: "km 8,446", limit: 80, secType: "LZA", hasPf: false, icon: "fa-house", wikiImg: "", history: "Historische Durchgangsstraße von Vösendorf (1175 als 'Fesentorf' erwähnt). Gesichert mit LZA." },
+            { id: 33, type: "station", nr: 23, code: "VO", name: "Vösendorf SCS", area: "NÖ", kmVal: 13.9, km: "km 9,992", limit: 80, icon: "fa-cart-shopping", wikiImg: "", history: "Haltestelle zur direkten Erschließung der Shopping City Süd (SCS) mit hoher Fahrgastfrequenz." },
+            { id: 34, type: "station", nr: 24, code: "ME", name: "Maria Enzersdorf Südstadt", area: "NÖ", kmVal: 15.6, km: "km 11,718", limit: 80, icon: "fa-futbol", wikiImg: "", history: "Haltestelle beim Bundessport- und Freizeitzentrum Südstadt sowie dem Hauptsitz der EVN." },
+            { id: 35, type: "station", nr: 25, code: "ND", name: "Wiener Neudorf", area: "NÖ", kmVal: 16.6, km: "km 12,735", limit: 80, icon: "fa-tower-observation", wikiImg: "", history: "Bedeutender Knotenbahnhof mit mehreren Bahnsteiggleisen und dem zentralen Stellwerk der Badner Bahn." },
+            { id: 36, type: "crossing", nr: "25.1", name: "VLA Hauptstraße Wiener Neudorf", parentStation: "Wiener Neudorf", area: "NÖ", kmVal: 16.7, km: "km 12,757", limit: 80, secType: "VLA", hasPf: false, icon: "fa-road", wikiImg: "", history: "Hauptverkehrsader im Ortszentrum von Wiener Neudorf, gesichert per Vollschrankenanlage (VLA) laut Plan B1." },
+            { id: 37, type: "crossing", nr: "25.2", name: "Pfeifsignal 3 Privatwege", parentStation: "Wiener Neudorf", area: "NÖ", kmVal: 16.85, km: "km 12,949", limit: 80, secType: "Pfeifsignal", hasPf: true, icon: "fa-bullhorn", wikiImg: "", history: "Drei private Feld- und Wirtschaftswege (km 12,935, 12,949, 12,981), gesichert mit Pfeifsignal (Pf)." },
+            { id: 38, type: "crossing", nr: "25.3", name: "LZA Triester Straße", parentStation: "Wiener Neudorf", area: "NÖ", kmVal: 16.95, km: "km 13,028", limit: 80, secType: "LZA", hasPf: false, icon: "fa-route", wikiImg: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Maria_Theresia11.jpg/320px-Maria_Theresia11.jpg", history: "Querung der historischen Triester Poststraße im Zentrum Neudorfs. Gesichert mit LZA." },
+            { id: 39, type: "crossing", nr: "25.4", name: "Pfeifsignal Gemeindestraße", parentStation: "Wiener Neudorf", area: "NÖ", kmVal: 17.05, km: "km 13,064", limit: 80, secType: "Pfeifsignal", hasPf: true, icon: "fa-bullhorn", wikiImg: "", history: "Historischer Verbindungsweg zu den Gemeindegründen, gesichert mit Pf-Pfeifsignal." },
+            { id: 40, type: "crossing", nr: "25.5", name: "LZA Rathausgasse (Pf)", parentStation: "Wiener Neudorf", area: "NÖ", kmVal: 17.15, km: "km 13,170", limit: 80, secType: "LZA", hasPf: true, icon: "fa-building-columns", wikiImg: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Rathaus_Wiener_Neudorf.jpg/320px-Rathaus_Wiener_Neudorf.jpg", history: "Benannt nach dem Rathaus von Wiener Neudorf. Gesichert mit LZA und vorschriftsmäßigem Pfeifsignal (Pf)!" },
+            { id: 41, type: "crossing", nr: "25.6", name: "LZA Schillerstraße", parentStation: "Wiener Neudorf", area: "NÖ", kmVal: 17.3, km: "km 13,265", limit: 80, secType: "LZA", hasPf: false, icon: "fa-feather", wikiImg: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Anton_Graff_-_Friedrich_Schiller_1793_c.jpg/320px-Anton_Graff_-_Friedrich_Schiller_1793_c.jpg", history: "Gewidmet Dichterfürst Friedrich von Schiller (1759–1805). Gesichert mit LZA." },
+            { id: 42, type: "crossing", nr: "25.7", name: "LZA Brown-Boveri-Straße", parentStation: "Wiener Neudorf", area: "NÖ", kmVal: 17.7, km: "km 13,767", limit: 80, secType: "LZA", hasPf: false, icon: "fa-bolt", wikiImg: "", history: "Erinnert an die ehemaligen Großwerke des Elektrotechnikkonzerns BBC. Gesichert mit LZA." },
+            { id: 43, type: "station", nr: 26, code: "GF", name: "Griesfeld", area: "NÖ", kmVal: 17.85, km: "km 13,820", limit: 80, icon: "fa-industry", wikiImg: "", history: "Haltestelle zur Erschließung des Industriezentrums Niederösterreich Süd (IZ NÖ-Süd)." },
+            { id: 44, type: "crossing", nr: "26.1", name: "LZA Triester Straße (B17)", parentStation: "Griesfeld", area: "NÖ", kmVal: 19.0, km: "km 15,030", limit: 80, secType: "LZA", hasPf: false, icon: "fa-road", wikiImg: "", history: "Niveaugleiche B17-Querung bei der Anschlussstelle IZ NÖ Süd, gesichert mit LZA." },
+            { id: 45, type: "crossing", nr: "26.2", name: "Pfeifsignal Fußweg", parentStation: "Griesfeld", area: "NÖ", kmVal: 19.3, km: "km 15,347", limit: 80, secType: "Pfeifsignal", hasPf: true, icon: "fa-person-walking", wikiImg: "", history: "Fußweg-Querung vor Neu Guntramsdorf, gesichert durch das Pfeifsignal (Pf)." },
+            { id: 46, type: "station", nr: 27, code: "NR", name: "Neu Guntramsdorf", area: "NÖ", kmVal: 19.4, km: "km 15,381", limit: 80, icon: "fa-house-chimney", wikiImg: "", history: "Haltestelle im nördlichen Siedlungsgebiet der Marktgemeinde Guntramsdorf." },
+            { id: 47, type: "crossing", nr: "27.1", name: "LZA Hauptstraße Guntramsdorf", parentStation: "Neu Guntramsdorf", area: "NÖ", kmVal: 20.9, km: "km 17,111", limit: 80, secType: "LZA", hasPf: false, icon: "fa-road", wikiImg: "", history: "Haupteinfallstraße von Guntramsdorf zur Lokalbahn, gesichert mit LZA." },
+            { id: 48, type: "station", nr: 28, code: "GL", name: "Guntramsdorf Lokalbahn", area: "NÖ", kmVal: 21.0, km: "km 17,157", limit: 80, icon: "fa-wine-glass", wikiImg: "", history: "Traditionsreicher Bahnhof im Herzen der Weinhauergemeinde Guntramsdorf mit Ausweichgleis." },
+            { id: 49, type: "crossing", nr: "28.1", name: "LZA Am Kirchanger", parentStation: "Guntramsdorf Lokalbahn", area: "NÖ", kmVal: 21.15, km: "km 17,295", limit: 80, secType: "LZA", hasPf: false, icon: "fa-church", wikiImg: "", history: "Zufahrt zum alten Kirchenplatz und den Pfarrgründen, gesichert mit LZA." },
+            { id: 50, type: "crossing", nr: "28.2", name: "Pfeifsignal Raiffeisengasse", parentStation: "Guntramsdorf Lokalbahn", area: "NÖ", kmVal: 21.25, km: "km 17,344", limit: 80, secType: "Pfeifsignal", hasPf: true, icon: "fa-building-columns", wikiImg: "", history: "Benannt nach Friedrich Wilhelm Raiffeisen, gesichert per Pfeifsignal (Pf)." },
+            { id: 51, type: "crossing", nr: "28.3", name: "LZA Lichteneggergasse (Pf)", parentStation: "Guntramsdorf Lokalbahn", area: "NÖ", kmVal: 21.4, km: "km 17,510", limit: 80, secType: "LZA", hasPf: true, icon: "fa-user", wikiImg: "", history: "Benannt nach Bürgermeister Johann Lichtenegger (1852–1918). Gesichert mit LZA und Pfeifgebot (Pf)!" },
+            { id: 52, type: "crossing", nr: "28.4", name: "Pfeifsignal Steinfeldgasse", parentStation: "Guntramsdorf Lokalbahn", area: "NÖ", kmVal: 21.6, km: "km 17,680", limit: 80, secType: "Pfeifsignal", hasPf: true, icon: "fa-bullhorn", wikiImg: "", history: "Historischer Weg ins Steinfeld, gesichert durch das Pfeifsignal (Pf)." },
+            { id: 53, type: "station", nr: 29, code: "ES", name: "Eigenheimsiedlung", area: "NÖ", kmVal: 22.3, km: "km 18,407", limit: 80, icon: "fa-houses", wikiImg: "", history: "Haltestelle im Siedlungsgebiet an der Gemeindegrenze zwischen Guntramsdorf und Traiskirchen." },
+            { id: 54, type: "crossing", nr: "29.1", name: "HSA Wienerbergerstraße", parentStation: "Eigenheimsiedlung", area: "NÖ", kmVal: 22.7, km: "km 18,849", limit: 80, secType: "HSA", hasPf: false, icon: "fa-cubes-stacked", wikiImg: "", history: "Erinnert an die Ziegelgruben der Wienerberger Ziegelfabriks-Gesellschaft. Laut Plan B1 gesichert mit HSA." },
+            { id: 55, type: "crossing", nr: "29.2", name: "LZA Anton Hermannstraße", parentStation: "Eigenheimsiedlung", area: "NÖ", kmVal: 23.5, km: "km 19,670", limit: 80, secType: "LZA", hasPf: false, icon: "fa-user", wikiImg: "", history: "Benannt nach dem Wohltäter Anton Hermann, gesichert mit LZA." },
+            { id: 56, type: "station", nr: 30, code: "MD", name: "Möllersdorf", area: "NÖ", kmVal: 23.6, km: "km 19,759", limit: 80, icon: "fa-city", wikiImg: "", history: "Bahnhof im Ortsteil Möllersdorf der Stadtgemeinde Traiskirchen." },
+            { id: 57, type: "crossing", nr: "30.1", name: "LZA Schulgasse", parentStation: "Möllersdorf", area: "NÖ", kmVal: 23.7, km: "km 19,846", limit: 80, secType: "LZA", hasPf: false, icon: "fa-school", wikiImg: "", history: "Führt zur historischen Schule von Möllersdorf, gesichert mit LZA." },
+            { id: 58, type: "crossing", nr: "30.2", name: "LZA Triester Straße B17", parentStation: "Möllersdorf", area: "NÖ", kmVal: 23.9, km: "km 20,090", limit: 80, secType: "LZA", hasPf: false, icon: "fa-road", wikiImg: "", history: "Kreuzungspunkt mit der B17 nahe Möllersdorf, gesichert mit LZA." },
+            { id: 59, type: "crossing", nr: "30.3", name: "HSA Oskar-Helmer-Straße", parentStation: "Möllersdorf", area: "NÖ", kmVal: 24.5, km: "km 20,636", limit: 80, secType: "HSA", hasPf: false, icon: "fa-award", wikiImg: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Oskar_Helmer_1955.jpg/320px-Oskar_Helmer_1955.jpg", history: "Gewidmet Innenminister Oskar Helmer (1887–1963). Laut Plan B1 gesichert mit HSA." },
+            { id: 60, type: "crossing", nr: "30.4", name: "LZA Michael Buchbergerstraße", parentStation: "Möllersdorf", area: "NÖ", kmVal: 24.9, km: "km 21,102", limit: 80, secType: "LZA", hasPf: false, icon: "fa-road", wikiImg: "", history: "Benannt nach Michael Buchberger, Förderer des Gemeinwesens. Gesichert mit LZA." },
+            { id: 61, type: "station", nr: 31, code: "TK", name: "Traiskirchen Lokalbahn", area: "NÖ", kmVal: 25.2, km: "km 21,375", limit: 80, icon: "fa-train", wikiImg: "", history: "Bahnhof der Stadtgemeinde Traiskirchen mit Gleisanschluss zur ÖBB-Aspangbahn." },
+            { id: 62, type: "crossing", nr: "31.1", name: "LZA Otto Glöckel Straße", parentStation: "Traiskirchen Lokalbahn", area: "NÖ", kmVal: 25.3, km: "km 21,433", limit: 80, secType: "LZA", hasPf: false, icon: "fa-book-open", wikiImg: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Otto_Gl%C3%B6ckel_1920.jpg/320px-Otto_Gl%C3%B6ckel_1920.jpg", history: "Benannt nach dem berühmten österreichischen Schulreformer Otto Glöckel (1874–1935). Gesichert mit LZA." },
+            { id: 63, type: "crossing", nr: "31.2", name: "LZA Pfaffstättnerstraße", parentStation: "Traiskirchen Lokalbahn", area: "NÖ", kmVal: 25.4, km: "km 21,521", limit: 80, secType: "LZA", hasPf: false, icon: "fa-road", wikiImg: "", history: "Verbindungsstraße nach Pfaffstätten, gesichert mit LZA." },
+            { id: 64, type: "crossing", nr: "31.3", name: "Pfeifsignal Fußweg", parentStation: "Traiskirchen Lokalbahn", area: "NÖ", kmVal: 25.5, km: "km 21,605", limit: 80, secType: "Pfeifsignal", hasPf: true, icon: "fa-person-walking", wikiImg: "", history: "Fußweg-Querung bei der ehem. Anschlussstelle Semperit, gesichert per Pf-Signal." },
+            { id: 65, type: "crossing", nr: "31.4", name: "LZA Steinfeldgasse", parentStation: "Traiskirchen Lokalbahn", area: "NÖ", kmVal: 25.9, km: "km 22,014", limit: 80, secType: "LZA", hasPf: false, icon: "fa-road", wikiImg: "", history: "Kreuzung der Steinfeldgasse vor der Abzweigstelle P11, gesichert mit LZA." },
+            { id: 66, type: "crossing", nr: "31.5", name: "HSA L 4011 Burian Feuerwerke", parentStation: "Traiskirchen Lokalbahn", area: "NÖ", kmVal: 26.8, km: "km 22,875", limit: 80, secType: "HSA", hasPf: false, icon: "fa-burst", wikiImg: "", history: "Niveaugleiche Querung der Landesstraße L 4011 beim Traditionsbetrieb Burian Feuerwerke, gesichert mit HSA." },
+            { id: 67, type: "crossing", nr: "31.6", name: "LZA Josefsthalerstraße", parentStation: "Traiskirchen Lokalbahn", area: "NÖ", kmVal: 27.2, km: "km 23,360", limit: 80, secType: "LZA", hasPf: false, icon: "fa-crown", wikiImg: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Joseph_II_by_Hickel.jpg/320px-Joseph_II_by_Hickel.jpg", history: "Führt ins Industrieareal Josefsthal (unter Joseph II. gegründet). Gesichert mit LZA." },
+            { id: 68, type: "station", nr: 32, code: "TJ", name: "Tribuswinkel- Josefs.", area: "NÖ", kmVal: 27.3, km: "km 23,410", limit: 80, icon: "fa-train", wikiImg: "", history: "Haltestelle im Ortsteil Tribuswinkel der Stadtgemeinde Traiskirchen nahe Schloss Tribuswinkel." },
+            { id: 69, type: "crossing", nr: "32.1", name: "Pfeifsignal Seligerstraße", parentStation: "Tribuswinkel- Josefs.", area: "NÖ", kmVal: 27.5, km: "km 23,646", limit: 80, secType: "Pfeifsignal", hasPf: true, icon: "fa-bullhorn", wikiImg: "", history: "Benannt nach der Bürgerfamilie Seliger, gesichert durch das Pfeifsignal (Pf)." },
+            { id: 70, type: "crossing", nr: "32.2", name: "LZA L 4011", parentStation: "Tribuswinkel- Josefs.", area: "NÖ", kmVal: 27.8, km: "km 24,030", limit: 80, secType: "LZA", hasPf: false, icon: "fa-route", wikiImg: "", history: "Weitere niveaugleiche Querung der L 4011, gesichert mit LZA." },
+            { id: 71, type: "station", nr: 33, code: "PR", name: "Pfaffstätten Rennplatz", area: "NÖ", kmVal: 27.9, km: "km 24,077", limit: 80, icon: "fa-trophy", wikiImg: "", history: "Haltestelle unmittelbar an der Badener Trabrennbahn an der Grenze zu Baden." },
+            { id: 72, type: "crossing", nr: "33.1", name: "LZA Kleingartenweg", parentStation: "Pfaffstätten Rennplatz", area: "NÖ", kmVal: 28.2, km: "km 24,386", limit: 80, secType: "LZA", hasPf: false, icon: "fa-seedling", wikiImg: "", history: "Zufahrt zur Kleingartensiedlung am Mühlbach, gesichert mit LZA." },
+            { id: 73, type: "station", nr: 34, code: "MG", name: "Baden Melkergründe", area: "NÖ", kmVal: 28.5, km: "km 24,634", limit: 80, icon: "fa-train", wikiImg: "", history: "Erste Haltestelle auf dem Stadtgebiet der Kurstadt Baden." },
+            { id: 74, type: "crossing", nr: "34.1", name: "LZA Kastnerweg", parentStation: "Baden Melkergründe", area: "NÖ", kmVal: 28.7, km: "km 24,767", limit: 80, secType: "LZA", hasPf: false, icon: "fa-road", wikiImg: "", history: "Benannt nach der Badener Bürgerfamilie Kastner, gesichert mit LZA." },
+            { id: 75, type: "station", nr: 35, code: "BL", name: "Baden Landesklinikum", area: "NÖ", kmVal: 29.0, km: "km 25,082", limit: 50, icon: "fa-hospital", wikiImg: "", history: "Haltestelle direkt beim Landesklinikum Baden. Beginn des eingleisigen Stadtstreckenbetriebs." },
+            { id: 76, type: "crossing", nr: "35.1", name: "LZA Dr. Julius Hahnstraße", parentStation: "Baden Landesklinikum", area: "NÖ", kmVal: 29.1, km: "km 25,174", limit: 50, secType: "LZA", hasPf: false, icon: "fa-scale-balanced", wikiImg: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Julius_Hahn.jpg/320px-Julius_Hahn.jpg", history: "Benannt nach Dr. Julius Hahn (1890–1972), Bürgermeister und Ehrenbürger von Baden. Gesichert mit LZA." },
+            { id: 77, type: "station", nr: 36, code: "LE", name: "Baden Leesdorf", area: "NÖ", kmVal: 29.4, km: "km 25,509", limit: 50, icon: "fa-house-user", wikiImg: "", history: "Station im Stadtteil Leesdorf mit Ausweichgleis und Betriebsanlagen der WLB." },
+            { id: 78, type: "crossing", nr: "36.1", name: "LZA Wimmergasse", parentStation: "Baden Leesdorf", area: "NÖ", kmVal: 29.45, km: "km 25,530", limit: 50, secType: "LZA", hasPf: false, icon: "fa-road", wikiImg: "", history: "Benannt nach Pfarrer Josef Wimmer in Leesdorf, gesichert mit LZA." },
+            { id: 79, type: "crossing", nr: "36.2", name: "LZA Augustinergasse", parentStation: "Baden Leesdorf", area: "NÖ", kmVal: 29.5, km: "km 25,548", limit: 50, secType: "LZA", hasPf: false, icon: "fa-church", wikiImg: "", history: "Benannt nach dem historischen Augustiner-Kloster und Konvent. Gesichert laut Plan mit LZA." },
+            { id: 80, type: "crossing", nr: "36.3", name: "LZA Augasse", parentStation: "Baden Leesdorf", area: "NÖ", kmVal: 29.7, km: "km 25,784", limit: 50, secType: "LZA", hasPf: false, icon: "fa-water", wikiImg: "", history: "Historischer Weg zur Leesdorfer Schwechatau, gesichert mit LZA." },
+            { id: 81, type: "crossing", nr: "36.4", name: "VLSA Dammgasse (Südbahn)", parentStation: "Baden Leesdorf", area: "NÖ", kmVal: 30.1, km: "km 26,278", limit: 50, secType: "VLSA", hasPf: false, icon: "fa-bridge", wikiImg: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Baden_S%C3%BCdbahnviadukt.jpg/320px-Baden_S%C3%BCdbahnviadukt.jpg", history: "Kreuzung unterhalb des Dammes der ÖBB Südbahn, gesichert mit Vollschranken-Lichtsignalanlage (VLSA)." },
+            { id: 82, type: "station", nr: 37, code: "BV", name: "Baden Viadukt", area: "NÖ", kmVal: 30.3, km: "km 26,439", limit: 50, icon: "fa-bridge-water", wikiImg: "", history: "Ausweichstation unterhalb des denkmalgeschützten Viadukts der ÖBB-Südbahn." },
+            { id: 83, type: "crossing", nr: "37.1", name: "VLSA Wassergasse", parentStation: "Baden Viadukt", area: "NÖ", kmVal: 30.7, km: "km 26,707", limit: 50, secType: "VLSA", hasPf: false, icon: "fa-droplet", wikiImg: "", history: "Weg zu den kaiserlichen Schwefelbädern Badens, gesichert mit VLSA." },
+            { id: 84, type: "station", nr: 38, code: "BJ", name: "Baden Josefsplatz", area: "NÖ", kmVal: 31.0, km: "km 27,055", limit: 50, icon: "fa-flag-checkered", wikiImg: "", history: "Südliche Endstation der Badner Bahn mitten im Stadtzentrum der Kurstadt Baden am Josefsplatz." }
+        ];
+
+        const TOTAL_ELEMENTS = TRACK_DATA.length;
+        const SVG_CANVAS_WIDTH = 8400;
+
+        // Mobile Simulator State
+        let currentStepIndex = 0;
+        let currentTrack = 1;
+        let isAutoDriving = false;
+        let autoDriveTimer = null;
+        let audioEnabled = true;
+        let audioCtx = null;
+        let isSheetExpanded = true;
+
+        // iOS Gesture and Double-Tap Zoom Prevention
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+        document.addEventListener('gesturechange', (e) => e.preventDefault());
+        document.addEventListener('gestureend', (e) => e.preventDefault());
+
+        let lastTapTime = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTapTime < 320 && now - lastTapTime > 0) {
+                e.preventDefault();
+                if (e.target && e.target.click && e.target.tagName === 'BUTTON') {
+                    e.target.click();
+                }
+            }
+            lastTapTime = now;
+        }, { passive: false });
+
+        function initMobileAudio() {
+            try {
+                if (!audioCtx) {
+                    const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtxClass) {
+                        audioCtx = new AudioCtxClass();
+                    }
+                }
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch(e) {}
+        }
+
+        function triggerHaptic(duration = 20) {
+            try {
+                if (navigator.vibrate) {
+                    navigator.vibrate(duration);
+                }
+            } catch(e) {}
+        }
+
+        function playMotorSound() {
+            if (!audioEnabled) return;
+            try {
+                initMobileAudio();
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+
+                // 1. Fahrmotor: Authentischer Drehstrom-Traktionsumrichter (VVVF Inverter)
+                const inverterOsc = audioCtx.createOscillator();
+                const inverterGain = audioCtx.createGain();
+                inverterOsc.type = "sawtooth";
+                inverterOsc.frequency.setValueAtTime(130, now);
+                inverterOsc.frequency.exponentialRampToValueAtTime(310, now + 0.2);
+                inverterOsc.frequency.exponentialRampToValueAtTime(540, now + 0.42);
+                inverterOsc.frequency.exponentialRampToValueAtTime(260, now + 0.75);
+
+                inverterGain.gain.setValueAtTime(0.001, now);
+                inverterGain.gain.linearRampToValueAtTime(0.08, now + 0.08);
+                inverterGain.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
+
+                // 2. Tiefes Rollgeräusch der Räder auf Stahlschienen (Rail Rumble)
+                const rumbleOsc = audioCtx.createOscillator();
+                const rumbleGain = audioCtx.createGain();
+                rumbleOsc.type = "triangle";
+                rumbleOsc.frequency.setValueAtTime(55, now);
+                rumbleOsc.frequency.linearRampToValueAtTime(90, now + 0.35);
+                rumbleOsc.frequency.linearRampToValueAtTime(45, now + 0.75);
+
+                rumbleGain.gain.setValueAtTime(0.001, now);
+                rumbleGain.gain.linearRampToValueAtTime(0.10, now + 0.07);
+                rumbleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
+
+                // 3. Typisches Schienenstoß-Doppelklicken ("Klick-Klack")
+                const playWheelClick = (delayTime, vol) => {
+                    setTimeout(() => {
+                        try {
+                            if (!audioCtx) return;
+                            const t = audioCtx.currentTime;
+                            const clickOsc = audioCtx.createOscillator();
+                            const clickGain = audioCtx.createGain();
+                            clickOsc.type = "square";
+                            clickOsc.frequency.setValueAtTime(200, t);
+                            clickOsc.frequency.exponentialRampToValueAtTime(50, t + 0.04);
+                            clickGain.gain.setValueAtTime(vol, t);
+                            clickGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+                            clickOsc.connect(clickGain);
+                            clickGain.connect(audioCtx.destination);
+                            clickOsc.start(t);
+                            clickOsc.stop(t + 0.04);
+                        } catch(e) {}
+                    }, delayTime);
+                };
+
+                inverterOsc.connect(inverterGain);
+                inverterGain.connect(audioCtx.destination);
+                rumbleOsc.connect(rumbleGain);
+                rumbleGain.connect(audioCtx.destination);
+
+                inverterOsc.start(now);
+                inverterOsc.stop(now + 0.75);
+                rumbleOsc.start(now);
+                rumbleOsc.stop(now + 0.75);
+
+                playWheelClick(70, 0.06);
+                playWheelClick(130, 0.045);
+                playWheelClick(330, 0.05);
+                playWheelClick(390, 0.035);
+            } catch(e) {}
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            const icon = document.getElementById('sound-icon');
+            if (audioEnabled) {
+                icon.className = "fa-solid fa-volume-high text-[11px]";
+                document.getElementById('btn-sound-toggle').className = "w-7 h-7 rounded-xl border border-slate-700 bg-slate-800 active:bg-slate-700 text-sky-400 flex items-center justify-center shadow-sm";
+                playMotorSound();
+            } else {
+                icon.className = "fa-solid fa-volume-xmark text-[11px]";
+                document.getElementById('btn-sound-toggle').className = "w-7 h-7 rounded-xl border border-slate-700 bg-slate-800 active:bg-slate-700 text-slate-500 flex items-center justify-center shadow-sm";
+            }
+            triggerHaptic(15);
+        }
+
+        function playWhistleAudio() {
+            if (!audioEnabled) return;
+            try {
+                initMobileAudio();
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+                const osc1 = audioCtx.createOscillator();
+                const osc2 = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc1.type = "sawtooth";
+                osc2.type = "sine";
+                osc1.frequency.setValueAtTime(740, now);
+                osc2.frequency.setValueAtTime(880, now);
+
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.22, now + 0.05);
+                gain.gain.setValueAtTime(0.20, now + 0.4);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.65);
+
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + 0.65);
+                osc2.stop(now + 0.65);
+            } catch(e) {}
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            const icon = document.getElementById('sound-icon');
+            if (audioEnabled) {
+                icon.className = "fa-solid fa-volume-high text-[11px]";
+                document.getElementById('btn-sound-toggle').className = "w-7 h-7 rounded-xl border border-slate-700 bg-slate-800 text-sky-400 flex items-center justify-center shadow-sm";
+                playTramChime();
+            } else {
+                icon.className = "fa-solid fa-volume-xmark text-[11px]";
+                document.getElementById('btn-sound-toggle').className = "w-7 h-7 rounded-xl border border-slate-700 bg-slate-800 text-slate-500 flex items-center justify-center shadow-sm";
+            }
+            triggerHaptic(15);
+        }
+
+        function calculateX(idx) {
+            const startX = 180;
+            const endX = 8240;
+            return startX + (idx * ((endX - startX) / (TOTAL_ELEMENTS - 1)));
+        }
+
+        function renderMobileTrackSvg() {
+            const group = document.getElementById('svg-elements-group');
+            const sleepersGroup = document.getElementById('svg-sleepers');
+
+            let sleepersHtml = '';
+            for (let x = 30; x < SVG_CANVAS_WIDTH; x += 18) {
+                sleepersHtml += `<line x1="${x}" y1="113" x2="${x}" y2="127" stroke="#94a3b8" stroke-width="2"/>`;
+                sleepersHtml += `<line x1="${x}" y1="163" x2="${x}" y2="177" stroke="#64748b" stroke-width="1.8"/>`;
+            }
+            sleepersGroup.innerHTML = sleepersHtml;
+
+            let elementsHtml = '';
+            let stationCount = 0;
+            let crossingCount = 0;
+
+            TRACK_DATA.forEach((item, idx) => {
+                const x = calculateX(idx);
+                const isStation = item.type === 'station';
+
+                const stationText = `#${item.nr} ${item.name}`;
+                const stationBoxW = Math.max(110, Math.round(stationText.length * 8.5) + 24);
+                const crossingText = item.name;
+                const crossingBoxW = Math.max(118, Math.round(crossingText.length * 8.0) + 26);
+
+                let boxY, textY, lineY1, lineY2;
+                if (isStation) {
+                    const tier = (stationCount++) % 2;
+                    boxY = tier === 0 ? 12 : 46;
+                    textY = boxY + 18;
+                    lineY1 = boxY + 26;
+                    lineY2 = 110;
+                } else {
+                    const tier = (crossingCount++) % 2;
+                    boxY = tier === 0 ? 186 : 222;
+                    textY = boxY + 18;
+                    lineY1 = 130;
+                    lineY2 = boxY;
+                }
+
+                elementsHtml += `
+                    <g id="mobile-node-${idx}" class="transition-all duration-300" opacity="0.12">
+                        <line x1="${x}" y1="70" x2="${x}" y2="190" stroke="${isStation ? '#10b981' : '#38bdf8'}" stroke-width="${isStation ? 2.5 : 1.5}" stroke-dasharray="${isStation ? 'none' : '4 4'}"/>
+                        
+                        ${isStation ? `
+                            <rect x="${x - 26}" y="108" width="52" height="15" rx="4" fill="#047857" stroke="#34d399" stroke-width="1.8"/>
+                            <text x="${x}" y="120" fill="#ecfdf5" font-family="'JetBrains Mono', monospace" font-size="10.5" font-weight="900" text-anchor="middle">
+                                ${item.code}
+                            </text>
+                            <g id="mobile-top-lbl-${idx}" class="hidden">
+                                <line x1="${x}" y1="${lineY1}" x2="${x}" y2="${lineY2}" stroke="#34d399" stroke-width="1.4" stroke-dasharray="3 3" opacity="0.8"/>
+                                <rect x="${x - (stationBoxW / 2)}" y="${boxY}" width="${stationBoxW}" height="26" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.5))"/>
+                                <text x="${x}" y="${textY}" fill="#ffffff" font-family="'Inter', sans-serif" font-size="11.5" font-weight="800" text-anchor="middle">
+                                    ${stationText}
+                                </text>
+                            </g>
+                        ` : `
+                            <circle cx="${x}" cy="120" r="8" fill="#0369a1" stroke="#38bdf8" stroke-width="2"/>
+                            <line x1="${x - 4.5}" y1="115.5" x2="${x + 4.5}" y2="124.5" stroke="#f59e0b" stroke-width="2.2"/>
+                            <line x1="${x - 4.5}" y1="124.5" x2="${x + 4.5}" y2="115.5" stroke="#f59e0b" stroke-width="2.2"/>
+                            
+                            ${item.hasPf ? `
+                                <rect x="${x - 11}" y="132" width="22" height="13" rx="3" fill="#881337" stroke="#f43f5e" stroke-width="1.2"/>
+                                <text x="${x}" y="142" fill="#ffe4e6" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="900" text-anchor="middle">Pf</text>
+                            ` : ''}
+
+                            <g id="mobile-bot-lbl-${idx}" class="hidden">
+                                <line x1="${x}" y1="${lineY1}" x2="${x}" y2="${lineY2}" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="3 3" opacity="0.8"/>
+                                <rect x="${x - (crossingBoxW / 2)}" y="${boxY}" width="${crossingBoxW}" height="26" rx="6" fill="#0c4a6e" stroke="#38bdf8" stroke-width="1.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.5))"/>
+                                <text x="${x}" y="${textY}" fill="#ffffff" font-family="'Inter', sans-serif" font-size="11" font-weight="700" text-anchor="middle">
+                                    ${crossingText}
+                                </text>
+                            </g>
+                        `}
+
+                        <text x="${x}" y="260" fill="#94a3b8" font-family="'JetBrains Mono', monospace" font-size="9.5" font-weight="700" text-anchor="middle">
+                            ${item.km}
+                        </text>
+                    </g>
+                `;
+            });
+
+            group.innerHTML = elementsHtml;
+        }
+
+        function centerOnTrain(smooth = true) {
+            const viewport = document.getElementById('mobile-track-viewport');
+            if (!viewport) return;
+            const targetX = calculateX(currentStepIndex);
+            const scrollPos = targetX - (viewport.clientWidth / 2);
+            viewport.scrollTo({
+                left: Math.max(0, scrollPos),
+                behavior: smooth ? 'smooth' : 'auto'
+            });
+        }
+
+        function driveToNext() {
+            triggerHaptic(25);
+            initMobileAudio();
+
+            if (currentTrack === 1) {
+                if (currentStepIndex >= TOTAL_ELEMENTS - 1) {
+                    if (isAutoDriving) toggleAutoDrive();
+                    return;
+                }
+                setTargetIndex(currentStepIndex + 1);
+            } else {
+                if (currentStepIndex <= 0) {
+                    if (isAutoDriving) toggleAutoDrive();
+                    return;
+                }
+                setTargetIndex(currentStepIndex - 1);
+            }
+        }
+
+        function driveToPrevious() {
+            triggerHaptic(20);
+            initMobileAudio();
+
+            if (currentTrack === 1) {
+                if (currentStepIndex <= 0) return;
+                setTargetIndex(currentStepIndex - 1);
+            } else {
+                if (currentStepIndex >= TOTAL_ELEMENTS - 1) return;
+                setTargetIndex(currentStepIndex + 1);
+            }
+        }
+
+        function setTargetIndex(idx) {
+            currentStepIndex = Math.max(0, Math.min(TOTAL_ELEMENTS - 1, idx));
+            animateTrain();
+        }
+
+        function animateTrain() {
+            const item = TRACK_DATA[currentStepIndex];
+            const targetX = calculateX(currentStepIndex);
+
+            playMotorSound();
+
+            const trainSvg = document.getElementById('svg-mobile-train');
+            if (currentTrack === 1) {
+                trainSvg.setAttribute('transform', `translate(${targetX - 35}, 72)`);
+                document.getElementById('track1-active-highlight').setAttribute('x2', targetX);
+            } else {
+                trainSvg.setAttribute('transform', `translate(${targetX + 35}, 122) scale(-1, 1)`);
+                document.getElementById('track2-active-highlight').setAttribute('x2', targetX);
+            }
+
+            revealMobileElements(currentStepIndex);
+            updateMobileSheet(item);
+            updateMobileRibbon(item);
+            updateMinimap(currentStepIndex);
+            document.getElementById('mobile-pos-slider').value = currentStepIndex;
+
+            centerOnTrain(true);
+
+            if (item.hasPf) {
+                playWhistleAudio();
+                triggerHaptic(60);
+            }
+        }
+
+        function revealMobileElements(targetIdx) {
+            if (currentTrack === 1) {
+                for (let i = 0; i <= targetIdx; i++) {
+                    setMobileNodeVisible(i, true);
+                }
+                for (let i = targetIdx + 1; i < TOTAL_ELEMENTS; i++) {
+                    setMobileNodeVisible(i, false);
+                }
+            } else {
+                for (let i = targetIdx; i < TOTAL_ELEMENTS; i++) {
+                    setMobileNodeVisible(i, true);
+                }
+                for (let i = 0; i < targetIdx; i++) {
+                    setMobileNodeVisible(i, false);
+                }
+            }
+        }
+
+        function setMobileNodeVisible(i, isVisible) {
+            const node = document.getElementById(`mobile-node-${i}`);
+            if (node) node.setAttribute('opacity', isVisible ? '1' : '0.12');
+            const topLbl = document.getElementById(`mobile-top-lbl-${i}`);
+            if (topLbl) topLbl.classList.toggle('hidden', !isVisible);
+            const botLbl = document.getElementById(`mobile-bot-lbl-${i}`);
+            if (botLbl) botLbl.classList.toggle('hidden', !isVisible);
+        }
+
+        function updateMinimap(idx) {
+            const item = TRACK_DATA[idx];
+            const percent = (idx / (TOTAL_ELEMENTS - 1)) * 100;
+            const fill = document.getElementById('minimap-progress-fill');
+            const marker = document.getElementById('minimap-train-marker');
+            const label = document.getElementById('minimap-station-label');
+            if (fill) fill.style.width = `${percent}%`;
+            if (marker) marker.style.left = `${percent}%`;
+            if (label && item) label.textContent = `${item.name} (${item.km})`;
+        }
+
+        function updateMobileSheet(item) {
+            const isStation = item.type === 'station';
+            const typePill = document.getElementById('sheet-type-pill');
+            const codePill = document.getElementById('sheet-code-pill');
+            const titleEl = document.getElementById('sheet-title');
+            const specEl = document.getElementById('sheet-crossing-spec');
+            const storyTitle = document.getElementById('sheet-story-title');
+            const storyDesc = document.getElementById('sheet-story-desc');
+            const iconEl = document.getElementById('sheet-icon');
+            const iconTag = document.getElementById('sheet-icon-tag');
+            const wikiImg = document.getElementById('sheet-wiki-img');
+            const iconBox = document.getElementById('sheet-icon-box');
+            const pfAlert = document.getElementById('sheet-pf-alert');
+
+            titleEl.textContent = item.name;
+
+            if (isStation) {
+                wikiImg.src = "";
+                wikiImg.classList.add('hidden');
+                iconBox.classList.remove('hidden');
+
+                typePill.textContent = `HALTESTELLE #${item.nr}`;
+                typePill.className = "text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono-tech flex-shrink-0";
+                codePill.textContent = item.code;
+                codePill.className = "text-xs font-mono-tech font-black text-emerald-300 bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-lg";
+                specEl.textContent = `${item.area} • V-Zul ${item.limit}`;
+                specEl.className = "text-[9px] font-mono-tech px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30 flex-shrink-0";
+                storyTitle.textContent = `Haltestelle: ${item.name} (${item.code})`;
+                storyDesc.textContent = item.history;
+                iconEl.className = `fa-solid ${item.icon} text-lg mb-0.5`;
+                if (iconTag) iconTag.textContent = "STATION";
+                pfAlert.classList.add('hidden');
+            } else {
+                if (item.wikiImg && item.wikiImg.trim() !== "") {
+                    wikiImg.src = item.wikiImg;
+                    wikiImg.classList.remove('hidden');
+                    iconBox.classList.add('hidden');
+                } else {
+                    wikiImg.src = "";
+                    wikiImg.classList.add('hidden');
+                    iconBox.classList.remove('hidden');
+                }
+
+                typePill.textContent = `KREUZUNG #${item.nr} • ${item.secType}`;
+                typePill.className = "text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-400 border border-sky-500/30 font-mono-tech flex-shrink-0";
+                codePill.textContent = item.secType;
+                codePill.className = "text-xs font-mono-tech font-bold text-amber-300 bg-amber-950/70 border border-amber-500/40 px-2 py-0.5 rounded-lg";
+                specEl.textContent = `Abschnitt: ${item.parentStation}`;
+                specEl.className = "text-[9px] font-mono-tech px-1.5 py-0.2 rounded bg-sky-950 text-sky-300 border border-sky-500/30 flex-shrink-0";
+                storyTitle.textContent = `Eisenbahnkreuzung: ${item.name}`;
+                storyDesc.textContent = item.history;
+                iconEl.className = `fa-solid ${item.icon} text-lg mb-0.5`;
+                if (iconTag) iconTag.textContent = item.secType;
+
+                if (item.hasPf) {
+                    pfAlert.classList.remove('hidden');
+                    pfAlert.classList.add('flex');
+                } else {
+                    pfAlert.classList.add('hidden');
+                }
+            }
+        }
+
+        function updateMobileRibbon(item) {
+            document.getElementById('ribbon-km').textContent = item.km;
+            document.getElementById('ribbon-speed').textContent = item.limit;
+            document.getElementById('ribbon-progress').textContent = `${currentStepIndex + 1} / ${TOTAL_ELEMENTS}`;
+
+            const ribbonPf = document.getElementById('ribbon-pf-alert');
+            if (ribbonPf) {
+                if (item.hasPf) {
+                    ribbonPf.classList.remove('hidden');
+                    ribbonPf.classList.add('inline-flex');
+                } else {
+                    ribbonPf.classList.add('hidden');
+                    ribbonPf.classList.remove('inline-flex');
+                }
+            }
+
+            const nextIdx = currentTrack === 1 ? currentStepIndex + 1 : currentStepIndex - 1;
+            const nextItem = TRACK_DATA[nextIdx];
+            const driveBtnLabel = document.getElementById('btn-drive-label');
+
+            if (nextItem) {
+                driveBtnLabel.textContent = "Weiterfahren ➔";
+            } else {
+                driveBtnLabel.textContent = currentTrack === 1 ? "Endstation Baden erreicht" : "Endstation Wien Oper erreicht";
+            }
+        }
+
+        function handleMobileImgError(img) {
+            img.classList.add('hidden');
+            document.getElementById('sheet-icon-box').classList.remove('hidden');
+        }
+
+        function toggleSheetExpand() {
+            isSheetExpanded = !isSheetExpanded;
+            const content = document.getElementById('sheet-expanded-content');
+            const chevron = document.getElementById('sheet-chevron');
+            if (isSheetExpanded) {
+                content.classList.remove('hidden');
+                chevron.className = "fa-solid fa-chevron-up text-xs transition-transform duration-300 rotate-180";
+            } else {
+                content.classList.add('hidden');
+                chevron.className = "fa-solid fa-chevron-up text-xs transition-transform duration-300";
+            }
+            triggerHaptic(15);
+        }
+
+        function toggleDirection() {
+            triggerHaptic(30);
+            initMobileAudio();
+            currentTrack = currentTrack === 1 ? 2 : 1;
+
+            const headerDir = document.getElementById('header-dir-label');
+            const headerTrack = document.getElementById('header-track-nr');
+            const btnDriveIcon = document.getElementById('btn-drive-icon');
+
+            if (currentTrack === 1) {
+                headerDir.textContent = "Gleis 1 ➔ Baden";
+                headerTrack.textContent = "GL 1";
+                btnDriveIcon.className = "fa-solid fa-train-subway text-base flex-shrink-0";
+            } else {
+                headerDir.textContent = "Gleis 2 ➔ Wien";
+                headerTrack.textContent = "GL 2";
+                btnDriveIcon.className = "fa-solid fa-train-subway text-base -scale-x-100 text-amber-300 flex-shrink-0";
+            }
+
+            animateTrain();
+        }
+
+        function toggleAutoDrive() {
+            triggerHaptic(30);
+            initMobileAudio();
+            isAutoDriving = !isAutoDriving;
+            const btn = document.getElementById('btn-mobile-auto');
+            const icon = document.getElementById('btn-auto-icon');
+
+            if (isAutoDriving) {
+                btn.className = "w-12 h-12 py-2 px-2 rounded-2xl bg-amber-500 text-slate-950 font-bold flex flex-col items-center justify-center transition border border-amber-400 shadow-lg shadow-amber-500/30 flex-shrink-0";
+                icon.className = "fa-solid fa-pause text-sm";
+                runMobileAutoStep();
+            } else {
+                btn.className = "w-12 h-12 py-2 px-2 rounded-2xl bg-slate-800 active:bg-slate-700 text-amber-400 font-bold flex flex-col items-center justify-center transition border border-slate-700/80 shadow-md flex-shrink-0";
+                icon.className = "fa-solid fa-play text-sm";
+                if (autoDriveTimer) clearTimeout(autoDriveTimer);
+            }
+        }
+
+        function runMobileAutoStep() {
+            if (!isAutoDriving) return;
+            if (currentTrack === 1 && currentStepIndex >= TOTAL_ELEMENTS - 1) {
+                toggleAutoDrive();
+                return;
+            }
+            if (currentTrack === 2 && currentStepIndex <= 0) {
+                toggleAutoDrive();
+                return;
+            }
+            driveToNext();
+            autoDriveTimer = setTimeout(runMobileAutoStep, 2300);
+        }
+
+        function jumpToPosition(pos) {
+            setTargetIndex(pos);
+        }
+
+        // Touch Swipe Navigation
+        const viewportEl = document.getElementById('mobile-track-viewport');
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        viewportEl.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }
+        }, { passive: true });
+
+        viewportEl.addEventListener('touchend', (e) => {
+            if (e.changedTouches.length === 1) {
+                const deltaX = e.changedTouches[0].clientX - touchStartX;
+                const deltaY = e.changedTouches[0].clientY - touchStartY;
+                if (Math.abs(deltaX) > 60 && Math.abs(deltaY) < 50) {
+                    if (deltaX < 0) {
+                        driveToNext();
+                    } else {
+                        driveToPrevious();
+                    }
+                }
+            }
+        }, { passive: true });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                driveToNext();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                driveToPrevious();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            centerOnTrain(false);
+        });
+
+        window.onload = function() {
+            renderMobileTrackSvg();
+            currentStepIndex = 0;
+            animateTrain();
+            setTimeout(() => {
+                centerOnTrain(false);
+            }, 120);
+        };
+    </script>
+</body>
+</html>
